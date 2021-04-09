@@ -1,0 +1,28 @@
+
+
+@app.get("/weather/daily/all", tags=["weather"])
+async def get_all_weather_valuess():
+    db_cursor = CONNECTION.cursor()                             # <- psycopg2 cursor object
+    db_cursor.execute('select * FROM "daily_weather_data";')    # <- execute SQL command
+    raw_result = db_cursor.fetchall()                           # <-fetch command result
+    db_cursor.close()                                           # <- close to prevent leaks
+    response_value = []                                         # <- outer object, dicts within
+    for i in raw_result:
+        # { daily_key: {tavg, tmin, tmax, prcp} } <--- one for each date in JSON
+        daily_values = {}               # key/value pairs within JSON response
+        daily_key = str(i[0])           # date ... key for a key/value pair within JSON
+        daily_value = {}                # value values for key for a key/value pair
+        daily_value["tavg"] = float(i[1])      # average temperature
+        daily_value["tavg"] = nullbegone(daily_value["tavg"])
+        daily_value["tmin"] = float(i[2])      # min temperature
+        daily_value["tmin"] = nullbegone(daily_value["tmin"])
+        daily_value["tmax"] = float(i[3])     # max temperature
+        daily_value["tmax"] = nullbegone(daily_value["tmax"])     # max temperature
+        daily_value["prcp"] = float(i[4])     # precipitation
+        daily_value["prcp"] = nullbegone(daily_value["prcp"])
+        daily_values[daily_key] = daily_value
+        response_value.append(daily_values)
+    content = {"records": response_value}    # JSON response, final result
+    dict_nulls_to_zeroes(content)         # convert nulls to zeroes to avoid JSON error
+    return JSONResponse(content=content, status_code=200, headers=cors_header, media_type='application/json')
+
